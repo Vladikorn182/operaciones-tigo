@@ -1,14 +1,19 @@
-# Operaciones Tigo - versión pendientes WhatsApp por socio
+# Operaciones Tigo - V4
 
-Módulos:
+Módulos incluidos:
 - Agenda Técnica
 - Pendientes de Instalación
 - Pendientes Pago
 - Suspendidas
 
-Ajuste principal:
-- En Pendientes de Instalación, los mensajes WhatsApp aparecen primero.
-- Se puede generar mensaje individual por socio.
-- También queda disponible mensaje global agrupado.
-- La tabla de casos antiguos +3 días queda debajo de los mensajes.
-- El mensaje muestra solo: código, nodo y fecha.
+Cambios V4:
+- Pendientes de Pago ahora genera mensaje WhatsApp solo por socio.
+- Ya no muestra mensaje global de pagos con todos los socios.
+- El mensaje de pago muestra código, nodo y fecha. No muestra teléfono.
+- Mantiene resumen por socio, detalle y descarga Excel.
+
+Subir a GitHub:
+1. Entra al repositorio operaciones-tigo.
+2. Reemplaza app.py, requirements.txt y README.md.
+3. Commit changes.
+4. En Streamlit Cloud: Manage app → Reboot app.

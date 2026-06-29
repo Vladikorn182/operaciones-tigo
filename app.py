@@ -1527,35 +1527,67 @@ def mostrar_pendientes_pago() -> None:
     st.subheader("📋 Detalle")
     st.dataframe(detalle_filtrado[["Código cliente", "Nodo", "Fecha", "EH", "Socio", "Tipo venta", "Cliente"]], use_container_width=True, hide_index=True)
 
-    st.subheader("📲 Mensaje WhatsApp")
-    formato = st.radio("Formato", ["Agrupado por socio", "Código + nodo"], horizontal=True, key="pago_formato")
+    st.subheader("📲 Mensaje WhatsApp por socio")
+    st.caption("Este mensaje se genera solo para un socio. No incluye teléfono; solo código, nodo y fecha.")
+
+    socios_msg_df = detalle_filtrado[["EH", "Socio"]].drop_duplicates().sort_values(["Socio", "EH"]).reset_index(drop=True)
+    if socios_msg_df.empty:
+        st.warning("No hay socios para generar mensaje con los filtros actuales.")
+        excel = excel_bytes({"Resumen": resumen, "Detalle": detalle_filtrado})
+        st.download_button(
+            "⬇️ Descargar Excel",
+            data=excel,
+            file_name=f"pendientes_pago_{hoy_bolivia().strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="pago_excel",
+        )
+        return
+
+    opciones_msg = [f"{str(r['EH'])} - {str(r['Socio'])}" for _, r in socios_msg_df.iterrows()]
+    default_idx = 0
+    if socio_sel != "Todos":
+        for idx, opcion in enumerate(opciones_msg):
+            if opcion.endswith(f"- {socio_sel}"):
+                default_idx = idx
+                break
+
+    seleccion_msg = st.selectbox("Seleccionar socio para mensaje", opciones_msg, index=default_idx, key="pago_socio_msg_select")
+    eh_msg = seleccion_msg.split(" - ", 1)[0]
+    socio_msg = seleccion_msg.split(" - ", 1)[1] if " - " in seleccion_msg else seleccion_msg
+    detalle_msg = detalle_filtrado[
+        (detalle_filtrado["EH"].astype(str) == str(eh_msg))
+        & (detalle_filtrado["Socio"].astype(str) == str(socio_msg))
+    ].copy()
+
     lineas = [
         "💳 *PENDIENTES DE PAGO*",
         f"📅 Revisión: *{hoy_bolivia().strftime('%d/%m/%Y')}*",
-        f"🔢 Total casos: *{len(detalle_filtrado)}*",
         "",
+        f"👤 *{limpiar_nombre_socio_mensaje(socio_msg)}*",
+        f"🆔 EH: *{eh_msg or 'S/D'}* | 💳 *{len(detalle_msg)}* casos",
+        "",
+        "📋 *Código | Nodo | Fecha*",
     ]
-    if formato == "Agrupado por socio":
-        lineas.append("📋 *Detalle por socio:*")
-        for (eh, socio), grupo in detalle_filtrado.groupby(["EH", "Socio"], dropna=False, sort=False):
-            lineas.append("")
-            lineas.append(f"👤 *{limpiar_nombre_socio_mensaje(socio)}*")
-            lineas.append(f"🆔 EH: *{eh or 'S/D'}* | 💳 *{len(grupo)}* casos")
-            for i, (_, r) in enumerate(grupo.iterrows(), start=1):
-                lineas.append(f"{i}. {r['Código cliente']} | {r['Nodo'] or 'S/D'} | {formatear_fecha_mensaje(r.get('Fecha',''))}")
-    else:
-        lineas.append("📋 *Código | Nodo | Fecha*")
-        for i, (_, r) in enumerate(detalle_filtrado.iterrows(), start=1):
-            lineas.append(f"{i}. {r['Código cliente']} | {r['Nodo'] or 'S/D'} | {formatear_fecha_mensaje(r.get('Fecha',''))}")
+    for i, (_, r) in enumerate(detalle_msg.iterrows(), start=1):
+        lineas.append(f"{i}. {r['Código cliente']} | {r['Nodo'] or 'S/D'} | {formatear_fecha_mensaje(r.get('Fecha',''))}")
     lineas.append("")
     lineas.append("✅ Favor contactar al cliente y reportar avance del pago.")
     texto = "\n".join(lineas)
 
-    st.text_area("Copiar mensaje", texto, height=360, key="pago_msg")
+    st.text_area("Copiar mensaje por socio", texto, height=300, key=f"pago_msg_{eh_msg}_{abs(hash(socio_msg))}")
     st.markdown(f"[📲 Enviar por WhatsApp]({whatsapp_link(texto)})")
 
-    excel = excel_bytes({"Resumen": resumen, "Detalle": detalle_filtrado})
-    st.download_button("⬇️ Descargar Excel", data=excel, file_name=f"pendientes_pago_{hoy_bolivia().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="pago_excel")
+    with st.expander("Ver detalle del socio seleccionado", expanded=False):
+        st.dataframe(detalle_msg[["Código cliente", "Nodo", "Fecha", "EH", "Socio", "Tipo venta", "Cliente"]], use_container_width=True, hide_index=True)
+
+    excel = excel_bytes({"Resumen": resumen, "Detalle": detalle_filtrado, "Mensaje socio": detalle_msg})
+    st.download_button(
+        "⬇️ Descargar Excel",
+        data=excel,
+        file_name=f"pendientes_pago_{hoy_bolivia().strftime('%Y%m%d')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="pago_excel",
+    )
 
 # =========================================================
 # MÓDULO: OBJETIVOS
