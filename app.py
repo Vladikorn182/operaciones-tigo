@@ -746,8 +746,8 @@ def mensaje_pendientes_antiguos(detalle: pd.DataFrame, dias_antiguedad: int, fec
 
 
 def mostrar_pendientes_inst() -> None:
-    st.title("📋 Pendientes de Instalación con Pago")
-    st.caption("Muestra pendientes antiguos por socio. Para WhatsApp se usa código, nodo y fecha.")
+    st.title("📋 Pendientes de Instalación con/Sin Pago")
+    st.caption("Carga PENDIENTE_INST_CON_PAGO o PENDIENTE_INST_SIN_PAGO. Filtra pendientes antiguos por socio y genera WhatsApp con código, nodo y fecha.")
 
     with st.sidebar:
         st.subheader("Config. Pendientes")
@@ -757,13 +757,14 @@ def mostrar_pendientes_inst() -> None:
             texto_eh_extra = st.text_area("Formato: 59509 Nombre del socio", height=120, key="pend_extra_eh")
         socios = construir_socios(texto_eh_extra)
 
-    archivo = st.file_uploader("📤 Sube archivo Pendientes de Instalación con Pago", type=["csv", "xlsx", "xls"], key="pend_uploader")
+    archivo = st.file_uploader("📤 Sube archivo Pendientes de Instalación CON PAGO o SIN PAGO", type=["csv", "xlsx", "xls"], key="pend_uploader")
     if archivo is None:
-        st.info("Sube el archivo PENDIENTE_INST_CON_PAGO para generar el reporte.")
+        st.info("Sube el archivo PENDIENTE_INST_CON_PAGO o PENDIENTE_INST_SIN_PAGO para generar el reporte.")
         return
 
     try:
         df_original = leer_archivo(archivo)
+        st.success(f"Archivo leído correctamente: {len(df_original)} filas y {len(df_original.columns)} columnas.")
         fecha_hoy = hoy_bolivia()
         resumen, detalle, diagnostico = calcular_pendientes_antiguos(df_original, int(dias_antiguedad), fecha_hoy, solo_eh_configurados, socios)
     except Exception as exc:

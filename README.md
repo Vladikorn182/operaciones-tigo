@@ -1,22 +1,23 @@
-# Operaciones Tigo Hogar
+# Operaciones Tigo V2
 
-Proyecto separado para módulos operativos:
+Proyecto independiente para:
 
 - Agenda Técnica
-- Pendientes de Instalación con Pago
+- Pendientes de Instalación CON PAGO y SIN PAGO
 - Pendientes Pago
 - Suspendidas
 
-## Streamlit Cloud
+## Actualización
+El módulo Pendientes de Instalación ahora acepta archivos:
 
-Main file path:
+- PENDIENTE_INST_CON_PAGO
+- PENDIENTE_INST_SIN_PAGO
 
-```text
-app.py
-```
+Filtra casos antiguos de +3 días por FECHA_GENERACION_OT y genera mensaje WhatsApp con:
 
-Subir solo estos archivos al repositorio nuevo:
+- Código
+- Nodo
+- Fecha
 
-- app.py
-- requirements.txt
-- README.md
+## Streamlit
+Main file path: app.py
