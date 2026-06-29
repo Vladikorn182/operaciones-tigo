@@ -982,6 +982,38 @@ def mensaje_suspendidas_global(detalle: pd.DataFrame, fecha_hoy: date, dias_anti
     return "\n".join(lineas)
 
 
+
+def mensaje_suspendidas_socio(detalle_socio: pd.DataFrame, fecha_hoy: date, dias_antiguedad: int, incluir_motivo: bool = False) -> str:
+    """Mensaje de suspendidas para un solo socio."""
+    fecha_txt = fecha_hoy.strftime("%d/%m/%Y")
+    if detalle_socio.empty:
+        return "✅ No se encontraron suspendidas para el socio seleccionado."
+
+    eh = detalle_socio.iloc[0].get("EH", "S/D") or "S/D"
+    socio = detalle_socio.iloc[0].get("Socio", "SIN SOCIO") or "SIN SOCIO"
+
+    lineas = [
+        f"🚨 *SUSPENDIDAS +{dias_antiguedad} DÍAS*",
+        f"📅 Corte: *{fecha_txt}*",
+        "",
+        f"👤 *{limpiar_nombre_socio_mensaje(socio)}*",
+        f"🆔 EH: *{eh}* | 🚨 *{len(detalle_socio)}* casos",
+        "",
+        "📋 *Código | Nodo | Fecha*",
+    ]
+
+    for i, (_, r) in enumerate(detalle_socio.iterrows(), start=1):
+        base = f"{i}. {r.get('Código cliente','S/D')} | {r.get('Nodo','S/D')} | {formatear_fecha_mensaje(r.get('Fecha',''))}"
+        if incluir_motivo:
+            base += f" | {r.get('Categoría','Revisar')}"
+        lineas.append(base)
+
+    lineas.extend([
+        "",
+        "✅ Favor revisar, contactar al cliente y reportar avance.",
+    ])
+    return "\n".join(lineas)
+
 def mostrar_suspendidas() -> None:
     st.title("🚨 Suspendidas")
     st.caption("Muestra suspendidas antiguas por socio. Mensaje WhatsApp reducido: código, nodo y fecha.")
@@ -1043,15 +1075,26 @@ def mostrar_suspendidas() -> None:
     if nodo_sel != "Todos":
         detalle_filtrado = detalle_filtrado[detalle_filtrado["Nodo"] == nodo_sel]
 
-    st.subheader("🚨 Detalle suspendidas antiguas")
     columnas_vista = ["Código cliente", "Nodo", "Fecha", "Días", "EH", "Socio", "Categoría"]
-    st.dataframe(detalle_filtrado[columnas_vista], use_container_width=True, hide_index=True)
 
-    st.subheader("📲 Mensaje global WhatsApp")
+    st.subheader("📲 Mensaje WhatsApp por socio")
     incluir_motivo = st.checkbox("Incluir motivo/categoría en el mensaje", value=False, key="susp_incluir_motivo")
-    texto = mensaje_suspendidas_global(detalle_filtrado, fecha_hoy, int(dias_antiguedad), incluir_motivo=incluir_motivo)
-    st.text_area("Copiar mensaje global", texto, height=360, key="susp_msg")
-    st.markdown(f"[📲 Enviar por WhatsApp]({whatsapp_link(texto)})")
+
+    socios_msg = sorted([s for s in detalle_filtrado["Socio"].dropna().unique() if str(s).strip()])
+    if socios_msg:
+        socio_msg_sel = st.selectbox("Seleccionar socio", socios_msg, key="susp_msg_socio_sel")
+        detalle_socio_msg = detalle_filtrado[detalle_filtrado["Socio"] == socio_msg_sel].copy()
+        texto = mensaje_suspendidas_socio(detalle_socio_msg, fecha_hoy, int(dias_antiguedad), incluir_motivo=incluir_motivo)
+        st.text_area("Copiar mensaje del socio", texto, height=320, key=f"susp_msg_socio_{socio_msg_sel}_{len(detalle_socio_msg)}_{int(incluir_motivo)}")
+        st.markdown(f"[📲 Enviar por WhatsApp]({whatsapp_link(texto)})")
+
+    with st.expander("📣 Mensaje global agrupado para todos los socios", expanded=False):
+        texto_global = mensaje_suspendidas_global(detalle_filtrado, fecha_hoy, int(dias_antiguedad), incluir_motivo=incluir_motivo)
+        st.text_area("Copiar mensaje global", texto_global, height=360, key=f"susp_msg_global_{len(detalle_filtrado)}_{int(incluir_motivo)}")
+        st.markdown(f"[📲 Enviar global por WhatsApp]({whatsapp_link(texto_global)})")
+
+    st.subheader("🚨 Detalle suspendidas antiguas")
+    st.dataframe(detalle_filtrado[columnas_vista], use_container_width=True, hide_index=True)
 
     excel = excel_bytes({"Resumen por socio": resumen, "Resumen categoria": resumen_categoria, "Detalle": detalle_filtrado[columnas_vista], "Diagnostico": pd.DataFrame([diagnostico]).astype(str)})
     st.download_button("⬇️ Descargar Excel", excel, file_name=f"suspendidas_antiguas_{fecha_hoy.strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="susp_excel")

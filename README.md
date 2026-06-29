@@ -1,19 +1,12 @@
-# Operaciones Tigo - V4
+# Operaciones Tigo v5
 
-Módulos incluidos:
-- Agenda Técnica
-- Pendientes de Instalación
-- Pendientes Pago
-- Suspendidas
+Ajuste aplicado:
+- En Suspendidas, el mensaje principal de WhatsApp ahora es por socio.
+- Se agregó selector de socio para el mensaje.
+- El mensaje global quedó opcional dentro de un desplegable.
+- La tabla de detalle queda debajo de los mensajes.
 
-Cambios V4:
-- Pendientes de Pago ahora genera mensaje WhatsApp solo por socio.
-- Ya no muestra mensaje global de pagos con todos los socios.
-- El mensaje de pago muestra código, nodo y fecha. No muestra teléfono.
-- Mantiene resumen por socio, detalle y descarga Excel.
-
-Subir a GitHub:
-1. Entra al repositorio operaciones-tigo.
-2. Reemplaza app.py, requirements.txt y README.md.
-3. Commit changes.
-4. En Streamlit Cloud: Manage app → Reboot app.
+Para actualizar en GitHub:
+1. Subir y reemplazar app.py, requirements.txt y README.md en operaciones-tigo.
+2. Commit changes.
+3. En Streamlit Cloud: Manage app → Reboot app.
