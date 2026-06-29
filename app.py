@@ -747,7 +747,7 @@ def mensaje_pendientes_antiguos(detalle: pd.DataFrame, dias_antiguedad: int, fec
 
 def mostrar_pendientes_inst() -> None:
     st.title("📋 Pendientes de Instalación con/Sin Pago")
-    st.caption("Carga PENDIENTE_INST_CON_PAGO o PENDIENTE_INST_SIN_PAGO. Filtra pendientes antiguos por socio y genera WhatsApp con código, nodo y fecha.")
+    st.caption("Carga PENDIENTE_INST_CON_PAGO o PENDIENTE_INST_SIN_PAGO. Genera mensajes WhatsApp separados por socio y deja la tabla de antigüedad debajo.")
 
     with st.sidebar:
         st.subheader("Config. Pendientes")
@@ -791,6 +791,7 @@ def mostrar_pendientes_inst() -> None:
     st.subheader("📊 Resumen por socio")
     st.dataframe(resumen, use_container_width=True, hide_index=True)
 
+    # Filtros que aplican tanto a los mensajes como a la tabla de antigüedad.
     col_socio, col_nodo = st.columns(2)
     socios_opciones = ["Todos"] + sorted([s for s in detalle["Socio"].dropna().unique() if str(s).strip()])
     nodos_opciones = ["Todos"] + sorted([n for n in detalle["Nodo"].dropna().unique() if str(n).strip()])
@@ -803,15 +804,32 @@ def mostrar_pendientes_inst() -> None:
     if nodo_sel != "Todos":
         detalle_filtrado = detalle_filtrado[detalle_filtrado["Nodo"] == nodo_sel]
 
+    st.subheader("📲 Mensajes WhatsApp por socio")
+    st.caption("Primero están los mensajes para compartir. La tabla de antigüedad queda más abajo.")
+
+    socios_msg = sorted([s for s in detalle_filtrado["Socio"].dropna().unique() if str(s).strip()])
+    if not socios_msg:
+        st.warning("No hay socios con el filtro seleccionado.")
+    else:
+        socio_msg = st.selectbox("Seleccionar socio para mensaje individual", socios_msg, key="pend_socio_mensaje_individual")
+        detalle_socio = detalle_filtrado[detalle_filtrado["Socio"] == socio_msg].copy()
+        texto_socio = mensaje_pendientes_antiguos(detalle_socio, int(dias_antiguedad), fecha_hoy, agrupado=True)
+        st.text_area("Mensaje individual del socio", texto_socio, height=300, key=f"pend_msg_socio_{socio_msg}_{len(detalle_socio)}")
+        st.markdown(f"[📲 Enviar mensaje del socio por WhatsApp]({whatsapp_link(texto_socio)})")
+
+        with st.expander("📣 Mensaje global agrupado para todos los socios", expanded=False):
+            texto_global = mensaje_pendientes_antiguos(detalle_filtrado, int(dias_antiguedad), fecha_hoy, agrupado=True)
+            st.text_area("Mensaje global agrupado", texto_global, height=380, key=f"pend_msg_global_{len(detalle_filtrado)}")
+            st.markdown(f"[📲 Enviar mensaje global por WhatsApp]({whatsapp_link(texto_global)})")
+
+        with st.expander("📋 Mensaje solo código + nodo + fecha", expanded=False):
+            texto_simple = mensaje_pendientes_antiguos(detalle_filtrado, int(dias_antiguedad), fecha_hoy, agrupado=False)
+            st.text_area("Mensaje simple", texto_simple, height=320, key=f"pend_msg_simple_{len(detalle_filtrado)}")
+            st.markdown(f"[📲 Enviar mensaje simple por WhatsApp]({whatsapp_link(texto_simple)})")
+
     st.subheader(f"⏳ Casos antiguos +{int(dias_antiguedad)} días")
     columnas_vista = ["Código cliente", "Nodo", "Fecha", "Días", "EH", "Socio"]
     st.dataframe(detalle_filtrado[columnas_vista], use_container_width=True, hide_index=True)
-
-    st.subheader("📲 Mensaje WhatsApp")
-    formato = st.radio("Formato", ["Agrupado por socio", "Código + nodo"], horizontal=True, key="pend_formato")
-    texto = mensaje_pendientes_antiguos(detalle_filtrado, int(dias_antiguedad), fecha_hoy, agrupado=(formato == "Agrupado por socio"))
-    st.text_area("Copiar mensaje", texto, height=360, key="pend_msg")
-    st.markdown(f"[📲 Enviar por WhatsApp]({whatsapp_link(texto)})")
 
     excel = excel_bytes({"Resumen": resumen, "Pendientes +3 dias": detalle_filtrado[columnas_vista], "Diagnostico": pd.DataFrame([diagnostico]).astype(str)})
     st.download_button("⬇️ Descargar Excel", excel, file_name=f"pendientes_inst_antiguos_{fecha_hoy.strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="pend_excel")

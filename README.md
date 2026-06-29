@@ -1,23 +1,14 @@
-# Operaciones Tigo V2
+# Operaciones Tigo - versión pendientes WhatsApp por socio
 
-Proyecto independiente para:
-
+Módulos:
 - Agenda Técnica
-- Pendientes de Instalación CON PAGO y SIN PAGO
+- Pendientes de Instalación
 - Pendientes Pago
 - Suspendidas
 
-## Actualización
-El módulo Pendientes de Instalación ahora acepta archivos:
-
-- PENDIENTE_INST_CON_PAGO
-- PENDIENTE_INST_SIN_PAGO
-
-Filtra casos antiguos de +3 días por FECHA_GENERACION_OT y genera mensaje WhatsApp con:
-
-- Código
-- Nodo
-- Fecha
-
-## Streamlit
-Main file path: app.py
+Ajuste principal:
+- En Pendientes de Instalación, los mensajes WhatsApp aparecen primero.
+- Se puede generar mensaje individual por socio.
+- También queda disponible mensaje global agrupado.
+- La tabla de casos antiguos +3 días queda debajo de los mensajes.
+- El mensaje muestra solo: código, nodo y fecha.
